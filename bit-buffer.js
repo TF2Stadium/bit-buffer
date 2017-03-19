@@ -217,48 +217,27 @@ function readUTF8String(stream, bytes) {
 }
 
 function readString(stream, bytes, utf8) {
-	if (bytes === 0) {
-		return '';
-	}
-	var i = 0;
-	var chars = [];
-	var append = true;
-	var fixedLength = !!bytes;
+	if (bytes === 0) {return '';}
+	var i = 0, chars = [], append = true, fixedLength = !!bytes;
 	if (!bytes) {
 		bytes = Math.floor((stream._length - stream._index) / 8);
 	}
-
-	// Read while we still have space available, or until we've
-	// hit the fixed byte length passed in.
-	while (i < bytes) {
+//  process.stderr.write('' + stream._index + '\n');
+	for (var i = 0; i < bytes; i++) {
 		var c = stream.readUint8();
-
-		// Stop appending chars once we hit 0x00
 		if (c === 0x00) {
 			append = false;
-
-			// If we don't have a fixed length to read, break out now.
-			if (!fixedLength) {
-				break;
-			}
+			if (!bytes) {
+        this._index += ((bytes - 1) - i);
+      }
+			break;
 		}
-		if (append) {
-			chars.push(c);
-		}
-
-		i++;
+		if (append) {chars[i] = c;}
 	}
-
 	var string = String.fromCharCode.apply(null, chars);
 	if (utf8) {
-		try {
-			return decodeURIComponent(escape(string)); // https://stackoverflow.com/a/17192845
-		} catch (e) {
-			return string;
-		}
-	} else {
-		return string;
-	}
+		return decodeURIComponent(escape(string));
+	} else {return string;}
 }
 
 function writeASCIIString(stream, string, bytes) {
