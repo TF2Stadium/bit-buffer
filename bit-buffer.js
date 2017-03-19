@@ -119,7 +119,12 @@ BitView.prototype.getInt8 = function (offset) {
 	return this.getBits(offset, 8, true);
 };
 BitView.prototype.getUint8 = function (offset) {
-	return this.getBits(offset, 8, false);
+  var view = this._view, byteIdx = offset >> 3, x = offset & 7;
+  if (((view.length << 3) - byteIdx) < 8) {
+    throw new Error('Cannot get ' + bits + ' bit(s) from offset ' + offset + ', ' + available + ' available');
+  }
+  if (x === 0) {return view[byteIdx];}
+	return (((view[byteIdx+1] << (8-x)) & 0xff) | (view[byteIdx] >> x  & (~0 >>> (24+x))));
 };
 BitView.prototype.getInt16 = function (offset) {
 	return this.getBits(offset, 16, true);
