@@ -120,7 +120,7 @@ BitView.prototype.getInt8 = function (offset) {
 };
 BitView.prototype.getUint8 = function (offset) {
   var view = this._view, byteIdx = offset >> 3, x = offset & 7;
-  if (((view.length << 3) - byteIdx) < 8) {
+  if (((view.length << 3) - offset) < 8) {
     throw new Error('Cannot get ' + bits + ' bit(s) from offset ' + offset + ', ' + available + ' available');
   }
   if (x === 0) {return view[byteIdx];}
@@ -222,21 +222,46 @@ function readString(stream, bytes, utf8) {
 	if (!bytes) {
 		bytes = Math.floor((stream._length - stream._index) / 8);
 	}
-//  process.stderr.write('' + stream._index + '\n');
-	for (var i = 0; i < bytes; i++) {
-		var c = stream.readUint8();
-		if (c === 0x00) {
-			append = false;
-			if (!bytes) {
-        this._index += ((bytes - 1) - i);
-      }
-			break;
-		}
-		if (append) {chars[i] = c;}
-	}
+//  process.stderr.write('HIHI!');
+  //  for (var x = 0; x < 1000000; ++x) {}
+  if (stream._index % 8 === 0999) {
+    process.stderr.write('HIHI\n');
+    var sidx = (stream._index >> 3) ;
+    for (var i = 0; i < bytes; i++) {
+      if (stream._index + 8 > stream._length) {
+			  throw new Error('Trying to read past the end of the stream' + 'hi ' + stream._index + '  ' + stream._length + '\n');
+		  }
+      var c = stream._view._view[sidx];
+      sidx++;
+      stream._index += 8;
+		  if (c === 0x00) {
+			  append = false;
+			  if (!bytes) {
+          stream._index += ((bytes - 1) - i);
+        }
+			  break;
+		  }
+		  if (append) {chars[i] = c;}
+	  }
+  } else {
+	  for (var i = 0; i < bytes; i++) {
+      var c = stream._view.getUint8(stream._index);
+      stream._index += 8;
+		  if (c === 0x00) {
+			  append = false;
+			  if (!bytes) {
+          stream._index += ((bytes - 1) - i);
+        }
+			  break;
+		  }
+		  if (append) {chars[i] = c;}
+	  }
+  }
+
 	var string = String.fromCharCode.apply(null, chars);
 	if (utf8) {
-		return decodeURIComponent(escape(string));
+    //		return decodeURIComponent(escape(string));
+    return string;
 	} else {return string;}
 }
 
